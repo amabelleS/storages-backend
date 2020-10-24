@@ -1,0 +1,10 @@
+{
+  "env": {
+    "mongoURI": "mongodb+srv://arya420:arya920@storages.htxhe.mongodb.net/storages?retryWrites=true&w=majority",
+    "DB_USER": "arya420",
+    "DB_PASSWORD": "arya920",
+    "DB_NAME": "storages",
+    "GOOGLE_API_KEY": "AIzaSyAsLRkNANT-CZWpDFC7yUTCaaMuO-UDM6s",
+    "JWT_KEY": "top_secret_key"
+  }
+}
