@@ -1,10 +1,10 @@
 const express = require('express');
 const dotenv = require('dotenv');
-const connectDB = require('./config/db');
-const bodyParser = require('body-parser');
-
 const fs = require('fs');
 const path = require('path');
+const bodyParser = require('body-parser');
+
+const connectDB = require('./config/db');
 
 const authRoutes = require('./routes/api/auth');
 const usersRoutes = require('./routes/api/users');
