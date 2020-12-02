@@ -3,8 +3,8 @@ const HttpError = require('../models/http-error');
 const uuid = require('uuid');
 const getCoordsForAddress = require('../utils/locations');
 
-const Storage = require('../models/storage');
-const User = require('../models/User');
+const Storage = require('../models/storageModal');
+const User = require('../models/UserModal');
 
 const { validationResult } = require('express-validator');
 
@@ -92,16 +92,17 @@ const createStorage = async (req, res, next) => {
 
   let user;
   try {
-    user = User.findById(req.userData.userId);
+    user = await User.findById(req.userData.userId);
   } catch (err) {
-    return next(new HttpError('Creating place failed, please try again', 422));
+    return next(
+      new HttpError('Creating storage failed, please try again', 422)
+    );
   }
 
   if (!user) {
     return next(new HttpError('Could not find user for provided id', 404));
   }
 
-  // DUMMY_STORAGES.push(createdStorage);
   try {
     await createdStorage.save();
   } catch (err) {
@@ -203,9 +204,178 @@ const deleteStorage = async (req, res, next) => {
   res.status(200).json({ message: 'Deleted storage' });
 };
 
+// ITEMS:
+
+// @desc    Create new storage item
+// @route   POST /api/storages/:sid/items
+// @access  Private
+const createStorageItem = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(
+      new HttpError('Ivalid inputs passed, please check your data', 422)
+    );
+  }
+  const { name, description, rentCost, qntInStock } = req.body;
+  const storageId = req.params.sid;
+
+  let storage;
+
+  try {
+    storage = await Storage.findById(storageId);
+    // console.log('storage fetched');
+  } catch (err) {
+    return next(
+      new HttpError('Somthing went wrong, could not fetch storage', 500)
+    );
+  }
+
+  if (storage.creator.toString() !== req.userData.userId) {
+    return next(new HttpError('You are not allowed to add an item', 401));
+  }
+
+  const createdStorageItem = {
+    name,
+    description,
+    rentCost: Number(rentCost),
+    qntInStock: Number(qntInStock),
+    creator: req.userData.userId,
+  };
+
+  storage.storageItems.push(createdStorageItem);
+
+  let user;
+  try {
+    user = await User.findById(req.userData.userId);
+  } catch (err) {
+    return next(new HttpError('... failed, please try again', 422));
+  }
+
+  if (!user) {
+    return next(new HttpError('Could not find user for provided id', 404));
+  }
+
+  try {
+    await storage.save();
+  } catch (err) {
+    console.log(err);
+    return next(
+      new HttpError('Somthing went wrong, could not update storage item', 500)
+    );
+  }
+
+  res.status(200).json({ storage: storage.toObject({ getters: true }) });
+};
+
+// @desc    Update storage item
+// @route   PATCH api/storages/:sid/items/itemid
+// @access  Privat+/admin
+const updateStorageItem = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    console.log(errors);
+    return next(
+      new HttpError('Ivalid inputs passed, please check your data', 422)
+    );
+  }
+
+  const { name, description, rentCost, qntInStock } = req.body;
+  const storageId = req.params.sid;
+  const itemId = req.params.itemid;
+
+  let storage;
+
+  try {
+    storage = await Storage.findById(storageId);
+    console.log(storage);
+  } catch (err) {
+    return next(
+      new HttpError('Somthing went wrong, could not fetch storage', 500)
+    );
+  }
+
+  if (storage.creator.toString() !== req.userData.userId) {
+    return next(
+      new HttpError('You are not allowed to edit this storage item', 401)
+    );
+  }
+
+  try {
+    await Storage.updateOne(
+      { _id: storageId, 'storageItems._id': itemId },
+      {
+        $set: {
+          'storageItems.$.name': name,
+          'storageItems.$.description': description,
+          'storageItems.$.qntInStock': qntInStock,
+          'storageItems.$.rentCost': rentCost,
+        },
+      }
+    );
+
+    // return updatedStorage;
+    res.status(200).json({
+      message: 'item updated',
+      // storage: updatedStorage.toObject({ getters: true }),
+    }); // send back UPDATED storage - TODO
+  } catch (err) {
+    console.log(err);
+    return next(
+      new HttpError('Somthing went wrong, could not update storage item', 500)
+    );
+  }
+};
+
+const deleteStorageItem = async (req, res, next) => {
+  const storageId = req.params.sid;
+  const itemId = req.params.itemid;
+
+  let storage;
+  try {
+    storage = await Storage.findById(storageId);
+  } catch (err) {
+    return next(
+      new HttpError(
+        'Somthing went wrong, could not fetch storage for deleting',
+        500
+      )
+    );
+  }
+
+  if (!storage) {
+    return next(new HttpError('Could not find storage for this id', 404));
+  }
+
+  if (storage.creator.toString() !== req.userData.userId) {
+    const error = new HttpError(
+      'You are not allowed to delete this storage.',
+      401
+    );
+    return next(error);
+  }
+
+  try {
+    await storage.updateOne(
+      { _id: storageId },
+      {
+        $pull: { storageItems: { _id: itemId } },
+      }
+    );
+  } catch (err) {
+    return next(
+      new HttpError('Somthing went wrong, could not delete storage item', 500)
+    );
+  }
+
+  res.status(200).json({ message: `Deleted ${itemId}` });
+};
+
 // module.exports = getStorageById;
 exports.getStorageById = getStorageById;
 exports.getAllStorages = getAllStorages;
 exports.createStorage = createStorage;
 exports.updateStorage = updateStorage;
 exports.deleteStorage = deleteStorage;
+exports.createStorageItem = createStorageItem;
+exports.updateStorageItem = updateStorageItem;
+exports.deleteStorageItem = deleteStorageItem;

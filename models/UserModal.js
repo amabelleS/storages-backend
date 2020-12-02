@@ -27,7 +27,17 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-    storages: [{ type: mongoose.Types.ObjectId, ref: 'Storage' }],
+    storages: [
+      {
+        type: mongoose.Types.ObjectId,
+        ref: 'Storage',
+        isAdmin: {
+          type: Boolean,
+          required: true,
+          default: false,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

@@ -40,7 +40,7 @@ router.post(
   storagesControllers.createStorage
 );
 
-// @route    PATCH api/storages/sid
+// @route    PATCH api/storages/:sid
 // @desc     Update a storage
 // @access   Private
 router.patch(
@@ -49,9 +49,50 @@ router.patch(
   storagesControllers.updateStorage
 );
 
-// @route    PATCH api/storages/sid
+// @route    PATCH api/storages/:sid
 // @desc     Delete a storage
 // @access   Private
 router.delete('/:sid', storagesControllers.deleteStorage);
+
+// ITEMS ----------------------------------------------------
+
+// @desc    Create new storage item
+// @route   POST api/storages/:sid/items
+// @access  Private+/admin
+router.post(
+  '/:sid/items',
+  [
+    check('name').not().isEmpty(),
+    check('description').isLength({ min: 5 }),
+    check('rentCost').not().isEmpty(),
+    check('qntInStock').not().isEmpty(),
+  ],
+  storagesControllers.createStorageItem
+);
+
+// @desc    Update storage item
+// @route   PATCH api/storages/:sid/items
+// @access  Privat+/admin
+router.patch(
+  '/:sid/items/:itemid',
+  [
+    [
+      check('name').not().isEmpty(),
+      check('description').isLength({ min: 5 }),
+      check('rentCost').not().isEmpty(),
+      check('qntInStock').not().isEmpty(),
+    ],
+  ],
+  storagesControllers.updateStorageItem
+);
+
+// @desc    Delete storage item
+// @route   DELETE api/storages/:sid/items
+// @access  Private+/admin
+router.delete('/:sid/items/:itemid', storagesControllers.deleteStorageItem);
+
+// @desc    RESERVE/UNRESERVE storage item / Update stock
+// @route   PATCH api/storages/:sid/items
+// @access  Private
 
 module.exports = router;
