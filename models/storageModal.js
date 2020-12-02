@@ -2,22 +2,22 @@ const mongoose = require('mongoose');
 
 const Schema = mongoose.Schema;
 
-// const itemsSchema = new Schema({
-//   type: mongoose.Types.ObjectId,
-//   name: { type: String, required: true },
-//   description: { type: String, required: true },
-//   rentCost: { type: Number, required: true },
-//   qntInStock: { type: Number, require: true },
-//   creator: { type: mongoose.Types.ObjectId, required: true, ref: 'User' },
-//   reservedBy: [
-//     {
-//       type: mongoose.Types.ObjectId,
-//       required: true,
-//       ref: 'User',
-//       pickUpTime: Date,
-//     },
-//   ],
-// });
+const itemsSchema = new Schema({
+  id: { type: mongoose.Types.ObjectId, require: true },
+  name: { type: String, required: true },
+  description: { type: String, required: true },
+  rentCost: { type: Number, required: true },
+  qntInStock: { type: Number, require: true },
+  creator: { type: mongoose.Types.ObjectId, required: true, ref: 'User' },
+  reservedBy: [
+    {
+      type: mongoose.Types.ObjectId,
+      required: true,
+      ref: 'User',
+      pickUpTime: Date,
+    },
+  ],
+});
 
 const storageSchema = new Schema({
   title: { type: String, required: true },
@@ -33,24 +33,7 @@ const storageSchema = new Schema({
   activeCommunityUsers: [
     { type: mongoose.Types.ObjectId, required: true, ref: 'User' },
   ],
-  storageItems: [
-    {
-      id: { type: mongoose.Types.ObjectId, require: true },
-      name: { type: String, required: true },
-      description: { type: String, required: true },
-      rentCost: { type: Number, required: true },
-      qntInStock: { type: Number, require: true },
-      creator: { type: mongoose.Types.ObjectId, required: true, ref: 'User' },
-      reservedBy: [
-        {
-          type: mongoose.Types.ObjectId,
-          required: true,
-          ref: 'User',
-          pickUpTime: Date,
-        },
-      ],
-    },
-  ],
+  storageItems: [itemsSchema],
 });
 
 module.exports = mongoose.model('Storage', storageSchema);

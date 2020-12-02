@@ -287,7 +287,6 @@ const updateStorageItem = async (req, res, next) => {
 
   try {
     storage = await Storage.findById(storageId);
-    console.log(storage);
   } catch (err) {
     return next(
       new HttpError('Somthing went wrong, could not fetch storage', 500)
@@ -312,18 +311,17 @@ const updateStorageItem = async (req, res, next) => {
         },
       }
     );
-
-    // return updatedStorage;
-    res.status(200).json({
-      message: 'item updated',
-      // storage: updatedStorage.toObject({ getters: true }),
-    }); // send back UPDATED storage - TODO
   } catch (err) {
     console.log(err);
     return next(
       new HttpError('Somthing went wrong, could not update storage item', 500)
     );
   }
+  // return updatedStorage;
+  res.status(200).json({
+    message: 'item updated',
+    // storage: updatedStorage.toObject({ getters: true }),
+  }); // send back UPDATED storage - TODO
 };
 
 const deleteStorageItem = async (req, res, next) => {
@@ -355,12 +353,17 @@ const deleteStorageItem = async (req, res, next) => {
   }
 
   try {
-    await storage.updateOne(
-      { _id: storageId },
-      {
-        $pull: { storageItems: { _id: itemId } },
-      }
-    );
+    // await storage.subdocs.updateOne(
+    //   { _id: storageId },
+    //   {
+    //     $pull: { _id: { id: itemId } },
+    //   }
+    // );
+
+    // await Storage.subdocs.pull({ _id: itemId }); // removed NOT
+
+    storage.storageItems.splice(itemId, 1);
+    storage.save();
   } catch (err) {
     return next(
       new HttpError('Somthing went wrong, could not delete storage item', 500)
