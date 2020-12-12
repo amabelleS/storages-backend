@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
 
 const connectDB = require('./config/db');
 
-const authRoutes = require('./routes/api/auth');
+// const authRoutes = require('./routes/api/auth');
 const usersRoutes = require('./routes/api/users');
 
 const httpError = require('./models/http-error');
@@ -37,7 +37,7 @@ app.use((req, res, next) => {
 
 // Define Routes
 app.use('/api/users', usersRoutes);
-app.use('/api/auth', require('./routes/api/auth'));
+// app.use('/api/auth', require('./routes/api/auth'));
 app.use('/api/storages', require('./routes/api/storages'));
 
 app.use((req, res, next) => {

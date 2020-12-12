@@ -92,7 +92,12 @@ router.patch(
 router.delete('/:sid/items/:itemid', storagesControllers.deleteStorageItem);
 
 // @desc    RESERVE/UNRESERVE storage item / Update stock
-// @route   PATCH api/storages/:sid/items
+// @route   PATCH api/storages/:sid/items/reserve
 // @access  Private
+router.patch(
+  '/:sid/items/:itemid/reserve',
+  // [[check('reserve').not().isEmpty()]],
+  storagesControllers.reserveStorageItem
+);
 
 module.exports = router;

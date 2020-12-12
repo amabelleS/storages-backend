@@ -1,9 +1,9 @@
 const express = require('express');
-const router = express.Router();
 const { check } = require('express-validator');
 
 const usersControllers = require('../../controllers/users');
-const { route } = require('./auth');
+
+const router = express.Router();
 
 // @route    GET api/users
 // @desc     Get users

@@ -1,13 +1,15 @@
 const mongoose = require('mongoose');
+const { update } = require('./UserModal');
 
 const Schema = mongoose.Schema;
 
-const itemsSchema = new Schema({
-  id: { type: mongoose.Types.ObjectId, require: true },
+const itemSchema = new Schema({
+  _itemId: { type: mongoose.Types.ObjectId, require: true },
   name: { type: String, required: true },
   description: { type: String, required: true },
   rentCost: { type: Number, required: true },
   qntInStock: { type: Number, require: true },
+  reservedStack: { type: Number, require: true },
   creator: { type: mongoose.Types.ObjectId, required: true, ref: 'User' },
   reservedBy: [
     {
@@ -33,7 +35,19 @@ const storageSchema = new Schema({
   activeCommunityUsers: [
     { type: mongoose.Types.ObjectId, required: true, ref: 'User' },
   ],
-  storageItems: [itemsSchema],
+  storageItems: [itemSchema],
 });
+
+// storageSchema.methods.findItemAndReserve = function (itemId, userId) {
+// const updatedItems = this.storageItems.map((item) =>
+//   item._id.toString() === paramId.toString()
+//     ? {
+//         ...item,
+//         reservedBy: reservedBy.push(userId),
+//       }
+//     : item
+// );
+// this.storageItems = updatedItems;
+// };
 
 module.exports = mongoose.model('Storage', storageSchema);
