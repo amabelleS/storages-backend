@@ -38,6 +38,9 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
+    reservedItems: [
+      { type: mongoose.Types.ObjectId, required: true, ref: 'Item' },
+    ],
   },
   {
     timestamps: true,

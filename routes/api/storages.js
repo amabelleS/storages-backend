@@ -87,7 +87,7 @@ router.patch(
 );
 
 // @desc    Delete storage item
-// @route   DELETE api/storages/:sid/items
+// @route   DELETE api/storages/:sid/items/:itemid
 // @access  Private+/admin
 router.delete('/:sid/items/:itemid', storagesControllers.deleteStorageItem);
 
@@ -96,7 +96,7 @@ router.delete('/:sid/items/:itemid', storagesControllers.deleteStorageItem);
 // @access  Private
 router.patch(
   '/:sid/items/:itemid/reserve',
-  // [[check('reserve').not().isEmpty()]],
+  [[check('reserve').not().isEmpty()]],
   storagesControllers.reserveStorageItem
 );
 

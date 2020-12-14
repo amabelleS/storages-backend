@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
-const { update } = require('./UserModal');
+// const { update } = require('./UserModal');
+const HttpError = require('../models/http-error');
 
 const Schema = mongoose.Schema;
 
@@ -38,16 +39,29 @@ const storageSchema = new Schema({
   storageItems: [itemSchema],
 });
 
-// storageSchema.methods.findItemAndReserve = function (itemId, userId) {
-// const updatedItems = this.storageItems.map((item) =>
-//   item._id.toString() === paramId.toString()
-//     ? {
-//         ...item,
-//         reservedBy: reservedBy.push(userId),
-//       }
-//     : item
-// );
-// this.storageItems = updatedItems;
+// storageSchema.methods.findItem = async function (storageId, itemId) {
+//   let reservedItem;
+
+//   console.log(reservedItem);
+
+//   try {
+//     reservedItem = storage.storageItems.find(
+//       (item) => item._id.toString() === itemId.toString()
+//     );
+
+//     console.log(reservedItem);
+//   } catch (err) {
+//     console.log(err);
+//     return next(
+//       new HttpError('Somthing went wrong, could not find storage item', 404)
+//     );
+//   }
+
+//   if (!item) {
+//     const error = new HttpError('Could not find item for provided id.', 404);
+//     return next(error);
+//   }
+//   return item;
 // };
 
 module.exports = mongoose.model('Storage', storageSchema);

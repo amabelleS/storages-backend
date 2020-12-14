@@ -7,6 +7,7 @@ const Storage = require('../models/storageModal');
 const User = require('../models/UserModal');
 
 const { validationResult } = require('express-validator');
+const mongoose = require('mongoose');
 
 let DUMMY_STORAGES = [
   {
@@ -239,7 +240,7 @@ const createStorageItem = async (req, res, next) => {
     description,
     rentCost: Number(rentCost),
     qntInStock: Number(qntInStock),
-    reservedStack: qntInStock,
+    reservedStack: 0,
     creator: req.userData.userId,
   };
 
@@ -312,6 +313,9 @@ const updateStorageItem = async (req, res, next) => {
         },
       }
     );
+    // storage.storageItems.set(itemId, {
+
+    // });
   } catch (err) {
     console.log(err);
     return next(
@@ -325,6 +329,9 @@ const updateStorageItem = async (req, res, next) => {
   }); // send back UPDATED storage - TODO
 };
 
+// @desc    DELETE storage item / Update ?
+// @route   DELETE api/storages/:sid/items/:itemid
+// @access  Private+Admin
 const deleteStorageItem = async (req, res, next) => {
   const storageId = req.params.sid;
   const itemId = req.params.itemid;
@@ -354,14 +361,14 @@ const deleteStorageItem = async (req, res, next) => {
   }
 
   try {
-    // await storage.subdocs.updateOne(
+    // await storage.storageItems.updateOne(
     //   { _id: storageId },
     //   {
     //     $pull: { _id: { id: itemId } },
     //   }
     // );
 
-    // await Storage.subdocs.pull({ _id: itemId }); // removed NOT
+    // await Storage.storageItems.pull({ _id: itemId }); // ?? did not try
 
     storage.storageItems.splice(itemId, 1);
     storage.save();
@@ -392,7 +399,6 @@ const reserveStorageItem = async (req, res, next) => {
   const itemId = req.params.itemid;
 
   let storage;
-  let reservedItem;
 
   try {
     storage = await Storage.findById(storageId);
@@ -409,10 +415,19 @@ const reserveStorageItem = async (req, res, next) => {
     );
   }
 
+  // let reservedItem = storage.findItem(itemId);
+  let reservedItem;
+
+  // console.log(reservedItem);
+
   try {
     reservedItem = storage.storageItems.find(
       (item) => item._id.toString() === itemId.toString()
     );
+    // reservedItem = await Storage.find({
+    //   'storage._id': storageId,
+    //   'storageItems._id': itemId,
+    // });
     // reservedItem.reservedBy.push(req.userData.userId);
     console.log(reservedItem);
   } catch (err) {
@@ -422,29 +437,76 @@ const reserveStorageItem = async (req, res, next) => {
     );
   }
 
-  if (reservedItem && reserve) {
+  if (!reservedItem) {
+    const error = new HttpError('Could not find item for provided id.', 404);
+    return next(error);
+  }
+
+  let user;
+  try {
+    user = await User.findById(req.userData.userId);
+  } catch (err) {
+    const error = new HttpError(
+      'Reserving storage item failed, please try again.',
+      500
+    );
+    return next(error);
+  }
+
+  if (!user) {
+    const error = new HttpError('Could not find user for provided id.', 404);
+    return next(error);
+  }
+
+  if (
+    reservedItem &&
+    reservedItem.reservedStack < reservedItem.qntInStock &&
+    reserve
+  ) {
     reservedItem.reservedBy.push(req.userData.userId);
     reservedItem.reservedStack += 1;
-  } else if (reservedItem && !reserve) {
-    reservedItem.reservedBy = reservedItem.reservedBy.filter(
-      (item) => item.toString() !== req.userData.userId.toString()
-    );
-
+    user.reservedItems.push(reservedItem);
+  } else if (reservedItem && reservedItem.reservedStack > 0 && !reserve) {
+    reservedItem.reservedBy.splice(req.userData.userId, 1);
+    // reservedItem.reservedBy = reservedItem.reservedBy.filter(
+    //   (item) => item.toString() !== req.userData.userId.toString()
+    // );
     reservedItem.reservedStack -= 1;
+    user.reservedItems.splice(itemId, 1);
+    // user.reservedItems = user.reservedItems.filter(
+    //   (item) => item.toString() !== itemId.toString()
+    // );
   }
 
   // if (reservedItem.reservedStack > 0) {
   //   return next(new HttpError('Could not reserve item becouse ...', 400));
   // }
 
+  // console.log(user);
+  // console.log(reservedItem);
+
   try {
-    await storage.save();
+    const sess = await mongoose.startSession();
+    sess.startTransaction();
+    await storage.save({ session: sess });
+    await user.save({ session: sess });
+    await sess.commitTransaction();
   } catch (err) {
-    console.log(err);
-    return next(
-      new HttpError('Somthing went wrong, could not update storage item', 500)
+    const error = new HttpError(
+      'Reserving item failed, please try again.',
+      500
     );
+    return next(error);
   }
+
+  // try {
+  //   await storage.save();
+  // } catch (err) {
+  //   console.log(err);
+  //   return next(
+  //     new HttpError('Somthing went wrong, could not reserve storage item', 500)
+  //   );
+  // }
 
   res.status(200).json({ storage: storage.toObject({ getters: true }) });
 };
