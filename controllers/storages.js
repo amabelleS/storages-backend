@@ -207,11 +207,36 @@ const deleteStorage = async (req, res, next) => {
 
 // ITEMS:
 
+// @route    GET api/storages/:sid/items
+// @desc     get storage
+// @access   Public
+// const getStorageItems = async (req, res, next) => {
+//   const storageId = req.params.sid;
+
+//   let storage;
+//   try {
+//     storage = await Storage.findById(storageId);
+//   } catch (err) {
+//     const error = new HttpError(
+//       'Somthing went wrong, could not find a storage',
+//       500
+//     );
+//     return next(error);
+//   }
+
+//   if (!storage) {
+//     return next(new HttpError('could not find this storage id', 404));
+//   }
+//   res.json({ storage: storage.toObject({ getters: true }) });
+
+// };
+
 // @desc    Create new storage item
 // @route   POST /api/storages/:sid/items
 // @access  Private
 const createStorageItem = async (req, res, next) => {
   const errors = validationResult(req);
+  // console.log(errors);
   if (!errors.isEmpty()) {
     return next(
       new HttpError('Ivalid inputs passed, please check your data', 422)
@@ -243,6 +268,7 @@ const createStorageItem = async (req, res, next) => {
     reservedStack: 0,
     creator: req.userData.userId,
   };
+  // console.log(createdStorageItem);
 
   storage.storageItems.push(createdStorageItem);
 
@@ -270,7 +296,7 @@ const createStorageItem = async (req, res, next) => {
 };
 
 // @desc    Update storage item
-// @route   PATCH api/storages/:sid/items/itemid
+// @route   PATCH api/storages/:sid/items/:itemid
 // @access  Privat+/admin
 const updateStorageItem = async (req, res, next) => {
   const errors = validationResult(req);
@@ -301,35 +327,75 @@ const updateStorageItem = async (req, res, next) => {
     );
   }
 
-  try {
-    await Storage.updateOne(
-      { _id: storageId, 'storageItems._id': itemId },
-      {
-        $set: {
-          'storageItems.$.name': name,
-          'storageItems.$.description': description,
-          'storageItems.$.qntInStock': qntInStock,
-          'storageItems.$.rentCost': rentCost,
-        },
-      }
+  if (storage && storage.storageItems && storage.storageItems.length === 0) {
+    return next(
+      new HttpError('Could not find items for the provided storage id.', 404)
     );
-    // storage.storageItems.set(itemId, {
+  }
 
-    // });
+  let updatedItem;
+
+  try {
+    updatedItem = storage.storageItems.find(
+      (item) => item._id.toString() === itemId.toString()
+    );
   } catch (err) {
     console.log(err);
     return next(
-      new HttpError('Somthing went wrong, could not update storage item', 500)
+      new HttpError('Somthing went wrong, could not find storage item', 404)
     );
   }
-  // return updatedStorage;
+
+  if (!updatedItem) {
+    const error = new HttpError('Could not find item for provided id.', 404);
+    return next(error);
+  }
+
+  if (updatedItem) {
+    updatedItem.name = name;
+    updatedItem.description = description;
+    updatedItem.rentCost = rentCost;
+    updatedItem.qntInStock = qntInStock;
+  }
+
+  try {
+    await storage.save();
+  } catch (err) {
+    console.log(err);
+    return next(
+      new HttpError('Somthing went wrong, could not create storage item', 500)
+    );
+  }
+
+  // try {
+  //   await Storage.updateOne(
+  //     { _id: storageId, 'storageItems._id': itemId },
+  //     {
+  //       $set: {
+  //         'storageItems.$.name': name,
+  //         'storageItems.$.description': description,
+  //         'storageItems.$.qntInStock': qntInStock,
+  //         'storageItems.$.rentCost': rentCost,
+  //       },
+  //     }
+  //   );
+  // res.status(200).json({ storage: storage.toObject({ getters: true }) });
+  // storage.storageItems.set(itemId, {
+
+  // });
+  // } catch (err) {
+  //   console.log(err);
+  //   return next(
+  //     new HttpError('Somthing went wrong, could not update storage item', 500)
+  //   );
+  // }
+
   res.status(200).json({
-    message: 'item updated',
-    // storage: updatedStorage.toObject({ getters: true }),
-  }); // send back UPDATED storage - TODO
+    storage: storage.toObject({ getters: true }),
+  });
 };
 
-// @desc    DELETE storage item / Update ?
+// @desc    DELETE storage item
 // @route   DELETE api/storages/:sid/items/:itemid
 // @access  Private+Admin
 const deleteStorageItem = async (req, res, next) => {
@@ -360,18 +426,20 @@ const deleteStorageItem = async (req, res, next) => {
     return next(error);
   }
 
+  const udpeteToDeleteItems = storage.storageItems.filter(
+    (item) => item.id !== itemId
+  );
+  storage.storageItems = udpeteToDeleteItems;
+  // const index = storage.storageItems.map((item, index) => {
+  //   // item.id === itemId;
+  //   console.log(item, index);
+  // });
+  // console.log(index);
+
   try {
-    // await storage.storageItems.updateOne(
-    //   { _id: storageId },
-    //   {
-    //     $pull: { _id: { id: itemId } },
-    //   }
-    // );
-
-    // await Storage.storageItems.pull({ _id: itemId }); // ?? did not try
-
-    storage.storageItems.splice(itemId, 1);
-    storage.save();
+    // storage.storageItems.splice(index, 1);
+    // storage.storageItems.deleteOne({ _id: itemId });
+    await storage.save();
   } catch (err) {
     return next(
       new HttpError('Somthing went wrong, could not delete storage item', 500)
@@ -382,7 +450,7 @@ const deleteStorageItem = async (req, res, next) => {
 };
 
 // @desc    RESERVE/UNRESERVE storage item / Update stock
-// @route   PATCH api/storages/:sid/items/reserve
+// @route   PATCH api/storages/:sid/items/:itemId/reserve
 // @access  Private
 const reserveStorageItem = async (req, res, next) => {
   const errors = validationResult(req);
@@ -424,12 +492,6 @@ const reserveStorageItem = async (req, res, next) => {
     reservedItem = storage.storageItems.find(
       (item) => item._id.toString() === itemId.toString()
     );
-    // reservedItem = await Storage.find({
-    //   'storage._id': storageId,
-    //   'storageItems._id': itemId,
-    // });
-    // reservedItem.reservedBy.push(req.userData.userId);
-    console.log(reservedItem);
   } catch (err) {
     console.log(err);
     return next(
@@ -458,25 +520,55 @@ const reserveStorageItem = async (req, res, next) => {
     return next(error);
   }
 
-  if (
-    reservedItem &&
-    reservedItem.reservedStack < reservedItem.qntInStock &&
-    reserve
-  ) {
-    reservedItem.reservedBy.push(req.userData.userId);
-    reservedItem.reservedStack += 1;
-    user.reservedItems.push(reservedItem);
-  } else if (reservedItem && reservedItem.reservedStack > 0 && !reserve) {
-    reservedItem.reservedBy.splice(req.userData.userId, 1);
-    // reservedItem.reservedBy = reservedItem.reservedBy.filter(
-    //   (item) => item.toString() !== req.userData.userId.toString()
-    // );
-    reservedItem.reservedStack -= 1;
-    user.reservedItems.splice(itemId, 1);
-    // user.reservedItems = user.reservedItems.filter(
-    //   (item) => item.toString() !== itemId.toString()
-    // );
-  }
+  // const userDetails = {
+  //   id: req.userData.userId,
+  //   // pickUpTime: Date,
+  //   name: user.name,
+  //   email: user.email,
+  // };
+
+  // if (
+  //   reservedItem &&
+  //   user &&
+  //   reservedItem.reservedStack < reservedItem.qntInStock &&
+  //   reserve
+  // ) {
+  //   // console.log(req.userData);
+  //   reservedItem.reservedBy.push(req.userData.userId);
+  //   reservedItem.reservedStack += 1;
+  //   user.reservedItems.push(reservedItem._id);
+  //   console.log(reservedItem._id);
+  // } else if (reservedItem && reservedItem.reservedStack > 0 && !reserve) {
+  //   if (!reservedItem.reservedBy.includes(req.userData.userId)) {
+  //     const error = new HttpError('You have not reserved this item yet.', 404);
+  //     return next(error);
+  //   }
+  //   // reservedItem.reservedBy.splice(req.userData.userId.toString(), 1);
+  //   const userIndex = reservedItem.reservedBy.findIndex(
+  //     (item) => item.toString() === req.userData.userId.toString()
+  //   );
+  //   console.log(userIndex);
+  //   reservedItem.reservedBy.splice(userIndex, 1);
+
+  //   reservedItem.reservedStack -= 1;
+  //   const itemIndex = user.reservedItems.findIndex(
+  //     (item) => item.toString() === itemId.toString()
+  //   );
+  //   console.log(itemIndex);
+  //   user.reservedItems.splice(itemIndex, 1);
+  // }
+
+  // const filteredItem = reservedItem.reservedBy.filter(
+  //   (item) => item.toString() !== req.userData.userId.toString()
+  // );
+  // reservedItem.reservedBy = filteredItem;
+
+  // user.reservedItems.splice(itemId, 1);
+
+  //   user.reservedItems = user.reservedItems.filter(
+  //     (item) => item.toString() !== itemId.toString()
+  //   );
+  // }
 
   // if (reservedItem.reservedStack > 0) {
   //   return next(new HttpError('Could not reserve item becouse ...', 400));
@@ -488,9 +580,42 @@ const reserveStorageItem = async (req, res, next) => {
   try {
     const sess = await mongoose.startSession();
     sess.startTransaction();
+
+    if (
+      reservedItem &&
+      user &&
+      reservedItem.reservedStack < reservedItem.qntInStock &&
+      reserve
+    ) {
+      reservedItem.reservedBy.push(user);
+      reservedItem.reservedStack += 1;
+      user.reservedItems.push(reservedItem);
+    } else if (reservedItem && reservedItem.reservedStack > 0 && !reserve) {
+      if (!reservedItem.reservedBy.includes(req.userData.userId)) {
+        const error = new HttpError(
+          'You have not reserved this item yet.',
+          404
+        );
+        return next(error);
+      }
+
+      const userIndex = reservedItem.reservedBy.findIndex(
+        (item) => item.toString() === req.userData.userId.toString()
+      );
+      reservedItem.reservedBy.splice(userIndex, 1);
+      reservedItem.reservedStack -= 1;
+
+      const itemIndex = user.reservedItems.findIndex(
+        (item) => item.toString() === itemId.toString()
+      );
+      user.reservedItems.splice(itemIndex, 1);
+    }
+
     await storage.save({ session: sess });
     await user.save({ session: sess });
     await sess.commitTransaction();
+
+    res.status(200).json({ storage: storage.toObject({ getters: true }) });
   } catch (err) {
     const error = new HttpError(
       'Reserving item failed, please try again.',
@@ -498,17 +623,6 @@ const reserveStorageItem = async (req, res, next) => {
     );
     return next(error);
   }
-
-  // try {
-  //   await storage.save();
-  // } catch (err) {
-  //   console.log(err);
-  //   return next(
-  //     new HttpError('Somthing went wrong, could not reserve storage item', 500)
-  //   );
-  // }
-
-  res.status(200).json({ storage: storage.toObject({ getters: true }) });
 };
 
 // module.exports = getStorageById;
@@ -517,6 +631,7 @@ exports.getAllStorages = getAllStorages;
 exports.createStorage = createStorage;
 exports.updateStorage = updateStorage;
 exports.deleteStorage = deleteStorage;
+// exports.getStorageItems = getStorageItems;
 exports.createStorageItem = createStorageItem;
 exports.updateStorageItem = updateStorageItem;
 exports.deleteStorageItem = deleteStorageItem;

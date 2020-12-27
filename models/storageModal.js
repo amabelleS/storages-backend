@@ -18,6 +18,8 @@ const itemSchema = new Schema({
       required: true,
       ref: 'User',
       pickUpTime: Date,
+      name: { type: String, required: true },
+      email: { type: String, required: true },
     },
   ],
 });

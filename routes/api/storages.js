@@ -19,7 +19,7 @@ const checkAuth = require('../../middlware/check-auth');
 // @access   Public
 router.get('/', storagesControllers.getAllStorages);
 
-// @route    GET api/storages/sid
+// @route    GET api/storages/:sid
 // @desc     get storage
 // @access   Public
 router.get('/:sid', storagesControllers.getStorageById);
@@ -55,6 +55,11 @@ router.patch(
 router.delete('/:sid', storagesControllers.deleteStorage);
 
 // ITEMS ----------------------------------------------------
+
+// @route    GET api/storages/:sid/items
+// @desc     get storage
+// @access   Public
+// router.get('/:sid/items', storagesControllers.getStorageItems);
 
 // @desc    Create new storage item
 // @route   POST api/storages/:sid/items
@@ -92,7 +97,7 @@ router.patch(
 router.delete('/:sid/items/:itemid', storagesControllers.deleteStorageItem);
 
 // @desc    RESERVE/UNRESERVE storage item / Update stock
-// @route   PATCH api/storages/:sid/items/reserve
+// @route   PATCH api/storages/:sid/items/:itemId/reserve
 // @access  Private
 router.patch(
   '/:sid/items/:itemid/reserve',
