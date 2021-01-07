@@ -101,7 +101,7 @@ router.delete('/:sid/items/:itemid', storagesControllers.deleteStorageItem);
 // @access  Private
 router.patch(
   '/:sid/items/:itemid/reserve',
-  [[check('reserve').not().isEmpty()]],
+  // [[check('reserve').not().isEmpty()]],
   storagesControllers.reserveStorageItem
 );
 

@@ -9,19 +9,19 @@ const User = require('../models/UserModal');
 const { validationResult } = require('express-validator');
 const mongoose = require('mongoose');
 
-let DUMMY_STORAGES = [
-  {
-    id: 's1',
-    title: "eliyahu's storage",
-    description: 'community storage',
-    location: {
-      lat: 32.0603126,
-      log: 34.7887586,
-    },
-    address: 'ברחבת האיצטדיון, מול וינגייט 18',
-    creator: 'u1',
-  },
-];
+// let DUMMY_STORAGES = [
+//   {
+//     id: 's1',
+//     title: "eliyahu's storage",
+//     description: 'community storage',
+//     location: {
+//       lat: 32.0603126,
+//       log: 34.7887586,
+//     },
+//     address: 'ברחבת האיצטדיון, מול וינגייט 18',
+//     creator: 'u1',
+//   },
+// ];
 
 const getStorageById = async (req, res, next) => {
   const storageId = req.params.sid;
@@ -206,30 +206,6 @@ const deleteStorage = async (req, res, next) => {
 };
 
 // ITEMS:
-
-// @route    GET api/storages/:sid/items
-// @desc     get storage
-// @access   Public
-// const getStorageItems = async (req, res, next) => {
-//   const storageId = req.params.sid;
-
-//   let storage;
-//   try {
-//     storage = await Storage.findById(storageId);
-//   } catch (err) {
-//     const error = new HttpError(
-//       'Somthing went wrong, could not find a storage',
-//       500
-//     );
-//     return next(error);
-//   }
-
-//   if (!storage) {
-//     return next(new HttpError('could not find this storage id', 404));
-//   }
-//   res.json({ storage: storage.toObject({ getters: true }) });
-
-// };
 
 // @desc    Create new storage item
 // @route   POST /api/storages/:sid/items
@@ -470,11 +446,14 @@ const reserveStorageItem = async (req, res, next) => {
 
   try {
     storage = await Storage.findById(storageId);
-    // reservedItem = await
   } catch (err) {
     return next(
       new HttpError('Somthing went wrong, could not fetch storage', 500)
     );
+  }
+
+  if (!storage) {
+    return next(new HttpError('Could not find storage for this id', 404));
   }
 
   if (storage && storage.storageItems && storage.storageItems.length === 0) {
@@ -483,21 +462,9 @@ const reserveStorageItem = async (req, res, next) => {
     );
   }
 
-  // let reservedItem = storage.findItem(itemId);
-  let reservedItem;
-
-  // console.log(reservedItem);
-
-  try {
-    reservedItem = storage.storageItems.find(
-      (item) => item._id.toString() === itemId.toString()
-    );
-  } catch (err) {
-    console.log(err);
-    return next(
-      new HttpError('Somthing went wrong, could not find storage item', 404)
-    );
-  }
+  let reservedItem = storage.storageItems.find(
+    (item) => item._id.toString() === itemId.toString()
+  );
 
   if (!reservedItem) {
     const error = new HttpError('Could not find item for provided id.', 404);
@@ -520,96 +487,36 @@ const reserveStorageItem = async (req, res, next) => {
     return next(error);
   }
 
-  // const userDetails = {
-  //   id: req.userData.userId,
-  //   // pickUpTime: Date,
-  //   name: user.name,
-  //   email: user.email,
-  // };
+  if (
+    reservedItem &&
+    user &&
+    reservedItem.reservedStack < reservedItem.qntInStock &&
+    reserve
+  ) {
+    reservedItem.reservedBy.push(user);
+    reservedItem.reservedStack += 1;
+    user.reservedItems.push(reservedItem);
+  } else if (reservedItem && reservedItem.reservedStack > 0 && !reserve) {
+    if (!reservedItem.reservedBy.includes(req.userData.userId)) {
+      const error = new HttpError('You have not reserved this item yet.', 404);
+      return next(error);
+    }
 
-  // if (
-  //   reservedItem &&
-  //   user &&
-  //   reservedItem.reservedStack < reservedItem.qntInStock &&
-  //   reserve
-  // ) {
-  //   // console.log(req.userData);
-  //   reservedItem.reservedBy.push(req.userData.userId);
-  //   reservedItem.reservedStack += 1;
-  //   user.reservedItems.push(reservedItem._id);
-  //   console.log(reservedItem._id);
-  // } else if (reservedItem && reservedItem.reservedStack > 0 && !reserve) {
-  //   if (!reservedItem.reservedBy.includes(req.userData.userId)) {
-  //     const error = new HttpError('You have not reserved this item yet.', 404);
-  //     return next(error);
-  //   }
-  //   // reservedItem.reservedBy.splice(req.userData.userId.toString(), 1);
-  //   const userIndex = reservedItem.reservedBy.findIndex(
-  //     (item) => item.toString() === req.userData.userId.toString()
-  //   );
-  //   console.log(userIndex);
-  //   reservedItem.reservedBy.splice(userIndex, 1);
+    const userIndex = reservedItem.reservedBy.findIndex(
+      (item) => item.toString() === req.userData.userId.toString()
+    );
+    reservedItem.reservedBy.splice(userIndex, 1);
+    reservedItem.reservedStack -= 1;
 
-  //   reservedItem.reservedStack -= 1;
-  //   const itemIndex = user.reservedItems.findIndex(
-  //     (item) => item.toString() === itemId.toString()
-  //   );
-  //   console.log(itemIndex);
-  //   user.reservedItems.splice(itemIndex, 1);
-  // }
-
-  // const filteredItem = reservedItem.reservedBy.filter(
-  //   (item) => item.toString() !== req.userData.userId.toString()
-  // );
-  // reservedItem.reservedBy = filteredItem;
-
-  // user.reservedItems.splice(itemId, 1);
-
-  //   user.reservedItems = user.reservedItems.filter(
-  //     (item) => item.toString() !== itemId.toString()
-  //   );
-  // }
-
-  // if (reservedItem.reservedStack > 0) {
-  //   return next(new HttpError('Could not reserve item becouse ...', 400));
-  // }
-
-  // console.log(user);
-  // console.log(reservedItem);
+    const itemIndex = user.reservedItems.findIndex(
+      (item) => item.toString() === itemId.toString()
+    );
+    user.reservedItems.splice(itemIndex, 1);
+  }
 
   try {
     const sess = await mongoose.startSession();
     sess.startTransaction();
-
-    if (
-      reservedItem &&
-      user &&
-      reservedItem.reservedStack < reservedItem.qntInStock &&
-      reserve
-    ) {
-      reservedItem.reservedBy.push(user);
-      reservedItem.reservedStack += 1;
-      user.reservedItems.push(reservedItem);
-    } else if (reservedItem && reservedItem.reservedStack > 0 && !reserve) {
-      if (!reservedItem.reservedBy.includes(req.userData.userId)) {
-        const error = new HttpError(
-          'You have not reserved this item yet.',
-          404
-        );
-        return next(error);
-      }
-
-      const userIndex = reservedItem.reservedBy.findIndex(
-        (item) => item.toString() === req.userData.userId.toString()
-      );
-      reservedItem.reservedBy.splice(userIndex, 1);
-      reservedItem.reservedStack -= 1;
-
-      const itemIndex = user.reservedItems.findIndex(
-        (item) => item.toString() === itemId.toString()
-      );
-      user.reservedItems.splice(itemIndex, 1);
-    }
 
     await storage.save({ session: sess });
     await user.save({ session: sess });
@@ -631,7 +538,7 @@ exports.getAllStorages = getAllStorages;
 exports.createStorage = createStorage;
 exports.updateStorage = updateStorage;
 exports.deleteStorage = deleteStorage;
-// exports.getStorageItems = getStorageItems;
+
 exports.createStorageItem = createStorageItem;
 exports.updateStorageItem = updateStorageItem;
 exports.deleteStorageItem = deleteStorageItem;
