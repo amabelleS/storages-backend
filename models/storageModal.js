@@ -1,27 +1,46 @@
 const mongoose = require('mongoose');
-// const { update } = require('./UserModal');
-const HttpError = require('../models/http-error');
+
+const Item = require('../models/itemModal');
 
 const Schema = mongoose.Schema;
 
-const itemSchema = new Schema({
-  _itemId: { type: mongoose.Types.ObjectId, require: true },
-  name: { type: String, required: true },
-  description: { type: String, required: true },
-  rentCost: { type: Number, required: true },
-  qntInStock: { type: Number, require: true },
-  reservedStack: { type: Number, require: true },
-  creator: { type: mongoose.Types.ObjectId, required: true, ref: 'User' },
-  reservedBy: [
-    {
-      type: mongoose.Types.ObjectId,
-      required: true,
-      ref: 'User',
-      pickUpTime: Date,
-      name: { type: String, required: true },
-      email: { type: String, required: true },
-    },
-  ],
+// const itemSchema = new Schema({
+//   _itemId: { type: mongoose.Types.ObjectId, require: true },
+//   name: { type: String, required: true },
+//   description: { type: String, required: true },
+//   sirialNun: Number,
+//   rentCost: { type: Number, required: true },
+//   qntInStock: { type: Number, default: 1 },
+//   reservedStack: { type: Number, require: true },
+//   creator: { type: mongoose.Types.ObjectId, required: true, ref: 'User' },
+//   reservedBy: [
+//     {
+//       type: mongoose.Types.ObjectId,
+//       required: true,
+//       ref: 'User',
+//       pickUpTime: Date,
+//       name: { type: String, required: true },
+//       email: { type: String, required: true },
+//     },
+//   ],
+// });
+
+// const incomeSchema = new Schema({
+//   description: { type: String },
+//   date: { type: Date, required: true },
+//   amount: { type: Number, required: true },
+
+//   user: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
+//   item: {
+//     type: Schema.Types.ObjectId,
+//     required: true,
+//     ref: 'Item',
+//   },
+// });
+
+const inUseCountSchema = new Schema({
+  date: { type: Date, required: true },
+  amount: { type: Number, required: true },
 });
 
 const storageSchema = new Schema({
@@ -33,12 +52,29 @@ const storageSchema = new Schema({
     lng: { type: Number, required: true },
   },
   image: { type: String },
-  creator: { type: mongoose.Types.ObjectId, required: true, ref: 'User' },
-  admins: [{ type: mongoose.Types.ObjectId, required: true, ref: 'User' }],
-  activeCommunityUsers: [
-    { type: mongoose.Types.ObjectId, required: true, ref: 'User' },
+  // incomes: [incomeSchema],
+  TotalItemsCurrentlyInUseCount: [inUseCountSchema],
+  TotalItemsInStockCount: [
+    {
+      date: { type: Date, required: true },
+      amount: { type: Number, required: true },
+    },
   ],
-  storageItems: [itemSchema],
+  creator: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
+  admins: [{ type: Schema.Types.ObjectId, required: true, ref: 'User' }],
+  activeCommunityUsers: [
+    { type: Schema.Types.ObjectId, required: true, ref: 'User' },
+  ],
+  storageItems: [{ type: Schema.Types.ObjectId, required: true, ref: 'Item' }],
+});
+
+storageSchema.post('save', function (doc, next) {
+  doc
+    .populate('storageItems')
+    .execPopulate()
+    .then(function () {
+      next();
+    });
 });
 
 // storageSchema.methods.findItem = async function (storageId, itemId) {

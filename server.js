@@ -8,6 +8,7 @@ const connectDB = require('./config/db');
 
 // const authRoutes = require('./routes/api/auth');
 const usersRoutes = require('./routes/api/users');
+const itemsRoutes = require('./routes/api/items');
 
 const httpError = require('./models/http-error');
 
@@ -39,6 +40,7 @@ app.use((req, res, next) => {
 app.use('/api/users', usersRoutes);
 // app.use('/api/auth', require('./routes/api/auth'));
 app.use('/api/storages', require('./routes/api/storages'));
+app.use('/api/items', require('./routes/api/items'));
 
 app.use((req, res, next) => {
   const error = new httpError('Could not find this route', 404);

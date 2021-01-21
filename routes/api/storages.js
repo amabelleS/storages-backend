@@ -66,11 +66,14 @@ router.delete('/:sid', storagesControllers.deleteStorage);
 // @access  Private+/admin
 router.post(
   '/:sid/items',
+  fileUpload.single('image'),
   [
     check('name').not().isEmpty(),
     check('description').isLength({ min: 5 }),
+    // check('innerNum').not().isEmpty(),
     check('rentCost').not().isEmpty(),
-    check('qntInStock').not().isEmpty(),
+    check('depositAmount').not().isEmpty(),
+    // check('qntInStock').not().isEmpty(),
   ],
   storagesControllers.createStorageItem
 );
@@ -85,7 +88,6 @@ router.patch(
       check('name').not().isEmpty(),
       check('description').isLength({ min: 5 }),
       check('rentCost').not().isEmpty(),
-      check('qntInStock').not().isEmpty(),
     ],
   ],
   storagesControllers.updateStorageItem

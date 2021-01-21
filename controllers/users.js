@@ -39,7 +39,7 @@ const signup = async (req, res, next) => {
     );
   }
 
-  const { name, email, password } = req.body;
+  const { name, IDnum, phoneNum, email, password } = req.body;
 
   let existingUser;
   try {
@@ -69,6 +69,8 @@ const signup = async (req, res, next) => {
 
   const createdUser = new User({
     name,
+    IDnum,
+    phoneNum,
     email,
     password: hashedPassword,
     storages: [],
@@ -94,9 +96,12 @@ const signup = async (req, res, next) => {
   }
 
   // res.status(201).json({ user: createdUser.toObject({ getters: true }) });
-  res
-    .status(201)
-    .json({ userId: createdUser.id, email: createdUser.email, token: token });
+  res.status(201).json({
+    userId: createdUser.id,
+    email: createdUser.email,
+    name: createdUser.name,
+    token: token,
+  });
 };
 
 // login
@@ -146,6 +151,7 @@ const login = async (req, res, next) => {
   res.json({
     userId: existingUser.id,
     email: existingUser.email,
+    name: existingUser.name,
     token: token,
   });
 };

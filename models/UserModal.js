@@ -2,10 +2,20 @@ const mongoose = require('mongoose');
 const uniqueValidator = require('mongoose-unique-validator');
 mongoose.set('useCreateIndex', true);
 
-const userSchema = new mongoose.Schema(
+const Schema = mongoose.Schema;
+
+const userSchema = new Schema(
   {
     name: {
       type: String,
+      required: true,
+    },
+    IDnum: {
+      type: Number,
+      required: true,
+    },
+    phoneNum: {
+      type: Number,
       required: true,
     },
     email: {
@@ -29,7 +39,7 @@ const userSchema = new mongoose.Schema(
     },
     storages: [
       {
-        type: mongoose.Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref: 'Storage',
         isAdmin: {
           type: Boolean,
@@ -39,7 +49,7 @@ const userSchema = new mongoose.Schema(
       },
     ],
     reservedItems: [
-      { type: mongoose.Types.ObjectId, required: true, ref: 'Item' },
+      { type: Schema.Types.ObjectId, required: true, ref: 'Item' },
     ],
   },
   {
