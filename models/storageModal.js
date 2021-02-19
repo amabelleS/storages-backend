@@ -53,8 +53,14 @@ const storageSchema = new Schema({
   },
   image: { type: String },
   // incomes: [incomeSchema],
-  TotalItemsCurrentlyInUseCount: [inUseCountSchema],
-  TotalItemsInStockCount: [
+  totalItemsCurrentlyInUseLog: [inUseCountSchema],
+  totalItemsInStockCountLog: [
+    {
+      date: { type: Date, required: true },
+      amount: { type: Number, required: true },
+    },
+  ],
+  incomeLog: [
     {
       date: { type: Date, required: true },
       amount: { type: Number, required: true },
@@ -66,6 +72,8 @@ const storageSchema = new Schema({
     { type: Schema.Types.ObjectId, required: true, ref: 'User' },
   ],
   storageItems: [{ type: Schema.Types.ObjectId, required: true, ref: 'Item' }],
+  itemsDataPoints: [{ x: Date, y1: Number, y2: Number, date: String }],
+  incomeDataPoints: [{ x: Date, y: Number }],
 });
 
 storageSchema.post('save', function (doc, next) {
@@ -76,6 +84,15 @@ storageSchema.post('save', function (doc, next) {
       next();
     });
 });
+
+// DELETE ALL ASSOCIATED ITEMS AFTER A STORAGE IS DELETED
+// storageSchema.post('deleteOne', async function (storage) {
+//   console.log('got here..........');
+//   if (storage.storageItems.length) {
+//     const res = await Item.remove({ _id: { $in: storage.storageItems } });
+//     console.log(res);
+//   }
+// });
 
 // storageSchema.methods.findItem = async function (storageId, itemId) {
 //   let reservedItem;

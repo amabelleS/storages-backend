@@ -10,6 +10,7 @@ const itemSchema = new Schema({
   rentCost: { type: Number, required: true },
   depositAmount: { type: Number, required: true },
   inStock: { type: Boolean, default: true },
+  out: { type: Boolean, default: false },
   //   reservedStack: { type: Number, require: true },
   creator: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
   reservedBy: {

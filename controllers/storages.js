@@ -165,6 +165,7 @@ const updateStorage = async (req, res, next) => {
   res.status(200).json({ storage: storage.toObject({ getters: true }) });
 };
 
+//delete storage
 const deleteStorage = async (req, res, next) => {
   const storageId = req.params.sid;
 
@@ -196,6 +197,7 @@ const deleteStorage = async (req, res, next) => {
 
   try {
     await storage.deleteOne();
+    await Item.deleteMany({ _id: { $in: storage.storageItems } });
   } catch (err) {
     return next(
       new HttpError('Somthing went wrong, could not update storage', 500)
@@ -260,6 +262,21 @@ const createStorageItem = async (req, res, next) => {
   if (storage.creator.toString() !== req.userData.userId) {
     return next(new HttpError('You are not allowed to add an item', 401));
   }
+  // update items/stock count:
+  // try {
+  //   storage.TotalItemsInStockCount.push({
+  //     date: Date.now,
+  //     amount: storage.storageItems.length + 1,
+  //   });
+  // } catch (err) {
+  //   console.log(err);
+  // }
+
+  const newItemsInStockLog = {
+    date: Date.now(),
+    amount: storage.storageItems.length + 1,
+  };
+  // console.log(newItemsInStockLOg);
 
   // console.log(req.body.title);
   const { name, description, innerNum, rentCost, depositAmount } = req.body;
@@ -282,6 +299,10 @@ const createStorageItem = async (req, res, next) => {
     sess.startTransaction();
     await createdItem.save({ session: sess });
     storage.storageItems.push(createdItem);
+    storage.totalItemsInStockCountLog.push({
+      date: Date.now(),
+      amount: storage.storageItems.length,
+    });
     await storage.save({ session: sess });
     await sess.commitTransaction();
   } catch (err) {
@@ -323,17 +344,17 @@ const createStorageItem = async (req, res, next) => {
 //     return next(new HttpError('You are not allowed to add an item', 401));
 //   }
 
-//   const createdStorageItem = {
-//     name,
-//     description,
-//     rentCost: Number(rentCost),
-//     qntInStock: Number(qntInStock),
-//     reservedStack: 0,
-//     creator: req.userData.userId,
-//   };
-//   // console.log(createdStorageItem);
+// const createdStorageItem = {
+//   name,
+//   description,
+//   rentCost: Number(rentCost),
+//   qntInStock: Number(qntInStock),
+//   reservedStack: 0,
+//   creator: req.userData.userId,
+// };
+// // console.log(createdStorageItem);
 
-//   storage.storageItems.push(createdStorageItem);
+// storage.storageItems.push(createdStorageItem);
 
 //   let user;
 //   try {
@@ -358,6 +379,7 @@ const createStorageItem = async (req, res, next) => {
 //   res.status(200).json({ storage: storage.toObject({ getters: true }) });
 // };
 
+// TODO ---- MOVE TO ITEMS ------------------
 // @desc    Update storage item
 // @route   PATCH api/storages/:sid/items/:itemid
 // @access  Privat+/admin
@@ -445,7 +467,12 @@ const deleteStorageItem = async (req, res, next) => {
     sess.startTransaction();
     await item.remove({ session: sess });
     item.storage.storageItems.pull(item);
+    item.storage.totalItemsInStockCountLog.push({
+      date: Date.now(),
+      amount: item.storage.storageItems.length,
+    });
     await item.storage.save({ session: sess });
+    console.log(item);
     await sess.commitTransaction();
   } catch (err) {
     const error = new HttpError(
@@ -459,7 +486,10 @@ const deleteStorageItem = async (req, res, next) => {
     console.log(err);
   });
 
-  res.status(200).json({ message: `Deleted item ${itemId}.` });
+  res.status(200).json({
+    message: `Deleted item ${itemId}.`,
+    storage: item.storage.toObject({ getters: true }),
+  });
 };
 
 // @desc    RESERVE/UNRESERVE storage item / Update stock
@@ -482,7 +512,7 @@ const reserveStorageItem = async (req, res, next) => {
   let item;
 
   try {
-    item = await Item.findById(itemId);
+    item = await Item.findById(itemId).populate('storage');
   } catch (err) {
     return next(
       new HttpError('Somthing went wrong, could not fetch item', 500)
@@ -491,6 +521,10 @@ const reserveStorageItem = async (req, res, next) => {
 
   if (!item) {
     return next(new HttpError('Could not find item for this id', 404));
+  }
+
+  if (item.out === true) {
+    return next(new HttpError('Please check item in first', 403));
   }
 
   let user;
@@ -513,14 +547,16 @@ const reserveStorageItem = async (req, res, next) => {
     item.reservedBy = req.userData.userId;
     item.inStock = false;
     user.reservedItems.push(item);
-  } else if (item && !reserve && !item.inStock) {
-    if (!item.reservedBy.includes(req.userData.userId)) {
-      const error = new HttpError('You have not reserved this item yet.', 404);
-      return next(error);
-    }
-    item.reservedBy = {};
+  } else if (item && user && !reserve && !item.inStock) {
+    // if (item.reservedBy !== req.userData.userId) {
+    //   const error = new HttpError('You have not reserved this item yet.', 404);
+    //   return next(error);
+    // }
+    item.reservedBy = null;
     item.inStock = true;
+    // console.log(item);
     user.reservedItems.pull(item);
+    // console.log(user);
     // const userIndex = item.reservedBy.findIndex(
     //   (item) => item.toString() === req.userData.userId.toString()
     // );
@@ -540,8 +576,11 @@ const reserveStorageItem = async (req, res, next) => {
     await item.save({ session: sess });
     await user.save({ session: sess });
     await sess.commitTransaction();
-
-    res.status(200).json({ item: item.toObject({ getters: true }) });
+    console.log(item.storage);
+    res.status(200).json({
+      item: item.toObject({ getters: true }),
+      storage: item.storage.toObject({ getters: true }),
+    });
   } catch (err) {
     const error = new HttpError(
       'Reserving item failed, please try again.',
@@ -549,6 +588,148 @@ const reserveStorageItem = async (req, res, next) => {
     );
     return next(error);
   }
+};
+
+// @desc    PATCH update storage logs
+// @route   PATCH api/storages/:storageId/items/:itemId/out
+// @access  Private+admin
+const itemOut = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    console.log(errors);
+    return next(
+      new HttpError('Ivalid inputs passed, please check your data', 422)
+    );
+  }
+
+  const { income } = req.body;
+
+  const storageId = req.params.sid;
+  const itemId = req.params.itemid;
+
+  let storage;
+
+  try {
+    storage = await Storage.findById(storageId);
+    // console.log('storage fetched');
+  } catch (err) {
+    return next(
+      new HttpError('Somthing went wrong, could not fetch storage', 500)
+    );
+  }
+
+  if (!storage) {
+    return next(new HttpError('Could not find storage for this id', 404));
+  }
+
+  if (storage.creator.toString() !== req.userData.userId) {
+    return next(new HttpError('You are not allowed to add an item', 401));
+  }
+
+  let item;
+
+  try {
+    item = await Item.findById(itemId);
+  } catch (err) {
+    return next(
+      new HttpError('Somthing went wrong, could not fetch item', 500)
+    );
+  }
+
+  if (!item) {
+    return next(new HttpError('Could not find item for this id', 404));
+  }
+
+  if (item.creator.toString() !== req.userData.userId) {
+    const error = new HttpError('You are not allowed to out this item.', 401);
+    return next(error);
+  }
+
+  if (item.inStock === true || !item.reservedBy) {
+    return next(new HttpError('Please reserve item first', 403));
+  }
+  // if (!item.reservedBy) {
+  //   const error = new HttpError('Please reserve first.', 401);
+  //   return next(error);
+  // }
+
+  // update logs
+  storage.incomeLog.push({ date: '2020-011-29', amount: income });
+  storage.activeCommunityUsers.push(item.reservedBy);
+  item.out = true;
+  // item.inStock = false;
+  // const totalItemOutNow =
+  //   storage.storageItems.filter((item) => item.out).length + 1;
+  // console.log(storage.storageItems);
+  // storage.totalItemsCurrentlyInUseLog.push({
+  //   date: Date.now(),
+  //   amount: totalItemOutNow,
+  // });
+
+  try {
+    const sess = await mongoose.startSession();
+    sess.startTransaction();
+    // console.log(item);
+    await item.save({ session: sess });
+    await storage.save({ session: sess });
+    await sess.commitTransaction();
+
+    res.status(200).json({
+      item: item.toObject({ getters: true }),
+      storage: storage.toObject({ getters: true }),
+    });
+  } catch (err) {
+    const error = new HttpError(
+      'Reserving item failed, please try again.',
+      500
+    );
+    return next(error);
+  }
+};
+
+// add charts nodes:
+
+const addItemsNode = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    console.log(errors);
+    return next(
+      new HttpError('Ivalid inputs passed, please check your data', 422)
+    );
+  }
+
+  const { x, y1, y2 } = req.body;
+  const storageId = req.params.sid;
+
+  let storage;
+
+  try {
+    storage = await Storage.findById(storageId).populate('itemsDataPoints');
+  } catch (err) {
+    return next(
+      new HttpError('Somthing went wrong, could not fetch storage', 500)
+    );
+  }
+
+  if (storage.creator.toString() !== req.userData.userId) {
+    return next(new HttpError('You are not allowed to edit this storage', 401));
+  }
+  // let d = x.toLocaleDateString();
+  // console.log(d);
+  // let h = x.toISOString().slice(0, 10);
+  // console.log(h);
+  storage.itemsDataPoints.push({ x, y1, y2 });
+
+  try {
+    await storage.save();
+  } catch (err) {
+    console.log(err);
+    return next(
+      new HttpError('Somthing went wrong, could not update storage', 500)
+    );
+  }
+
+  res.status(200).json({ storage: storage.toObject({ getters: true }) });
 };
 
 // user's items:
@@ -593,5 +774,7 @@ exports.createStorageItem = createStorageItem;
 exports.updateStorageItem = updateStorageItem;
 exports.deleteStorageItem = deleteStorageItem;
 exports.reserveStorageItem = reserveStorageItem;
+exports.itemOut = itemOut;
+exports.addItemsNode = addItemsNode;
 
 // exports.getUserItems = getUserItems;

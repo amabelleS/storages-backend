@@ -49,7 +49,7 @@ router.patch(
   storagesControllers.updateStorage
 );
 
-// @route    PATCH api/storages/:sid
+// @route    DELETE api/storages/:sid
 // @desc     Delete a storage
 // @access   Private
 router.delete('/:sid', storagesControllers.deleteStorage);
@@ -105,6 +105,20 @@ router.patch(
   '/:sid/items/:itemid/reserve',
   // [[check('reserve').not().isEmpty()]],
   storagesControllers.reserveStorageItem
+);
+
+// @desc    PATCH update storage logs - item out
+// @route   PATCH api/storages/:storageId/items/:itemId/out
+// @access  Private+admin
+router.patch('/:sid/items/:itemid/out', storagesControllers.itemOut);
+
+// @route    PATCH api/storages/:sid/addItemsNode
+// @desc     add new node to items chart datapoints
+// @access   Private + admin
+router.patch(
+  '/:sid/addItemsNode',
+  // [[check('title').not().isEmpty(), check('description').isLength({ min: 5 })]],
+  storagesControllers.addItemsNode
 );
 
 module.exports = router;
