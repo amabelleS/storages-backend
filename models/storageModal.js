@@ -51,7 +51,8 @@ const storageSchema = new Schema({
     lat: { type: Number, required: true },
     lng: { type: Number, required: true },
   },
-  image: { type: String },
+  // image: { type: String },
+  image: { url: String, filename: String },
   // incomes: [incomeSchema],
   totalItemsCurrentlyInUseLog: [inUseCountSchema],
   totalItemsInStockCountLog: [
@@ -84,6 +85,16 @@ storageSchema.post('save', function (doc, next) {
       next();
     });
 });
+
+// storageSchema.post('deleteOne', async function (doc, next) {
+//   if (storage.storageItems) {
+//     storage.storageItems.forEach(async function (item) {
+//       await cloudinary.uploader.destroy(item.image.filename);
+//     });
+//   }
+
+//   next();
+// });
 
 // DELETE ALL ASSOCIATED ITEMS AFTER A STORAGE IS DELETED
 // storageSchema.post('deleteOne', async function (storage) {

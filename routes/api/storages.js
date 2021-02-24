@@ -4,9 +4,15 @@ const router = express.Router();
 const { check } = require('express-validator');
 
 const storagesControllers = require('../../controllers/storages');
-const fileUpload = require('../../middlware/file-upload');
+// const fileUpload = require('../../middlware/file-upload');
+// const fileUpload = require('../../middlware/file-cloudinary');
 const checkAuth = require('../../middlware/check-auth');
 // const getStorageById = require('../../controllers/storages');
+
+const multer = require('multer');
+const { storage } = require('../../cloudinary');
+
+const fileUpload = multer({ storage });
 
 // @route    GET api/storages
 // @desc     Test all storages
@@ -120,5 +126,10 @@ router.patch(
   // [[check('title').not().isEmpty(), check('description').isLength({ min: 5 })]],
   storagesControllers.addItemsNode
 );
+
+// @route    GET api/storages/:sid/users
+// @desc     get storage users reseved items
+// @access   Private + admin
+router.get('/:sid/users', storagesControllers.getStorageUsers);
 
 module.exports = router;

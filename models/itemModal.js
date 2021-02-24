@@ -17,11 +17,22 @@ const itemSchema = new Schema({
     type: Schema.Types.ObjectId,
     // required: true,
     ref: 'User',
+    name: { type: String },
+    email: { type: String },
+    phoneNum: { type: Number },
     // pickUpTime: Date,
-    // name: { type: String, required: true },
-    // email: { type: String, required: true },
   },
-  image: { type: String },
+  reservedByDetails: {
+    // type: Schema.Types.ObjectId,
+    // required: true,
+    // ref: 'User',
+    name: { type: String },
+    email: { type: String },
+    phoneNum: { type: Number },
+    // pickUpTime: Date,
+  },
+  // image: { type: String },
+  image: { url: String, filename: String },
 });
 
 module.exports = mongoose.model('Item', itemSchema);

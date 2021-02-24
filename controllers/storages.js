@@ -10,6 +10,8 @@ const Item = require('../models/itemModal');
 const { validationResult } = require('express-validator');
 const mongoose = require('mongoose');
 
+const { cloudinary } = require('../cloudinary');
+
 // let DUMMY_STORAGES = [
 //   {
 //     id: 's1',
@@ -41,7 +43,7 @@ const getStorageById = async (req, res, next) => {
   if (!storage) {
     return next(new HttpError('could not find this storage id', 404));
   }
-  console.log(storage);
+  // console.log(storage);
   res.json({ storage: storage.toObject({ getters: true }) });
   // res.send('Storages route'));
 };
@@ -84,12 +86,14 @@ const createStorage = async (req, res, next) => {
     return next(error);
   }
 
+  console.log(req.file);
   const createdStorage = new Storage({
     title,
     description,
     address,
     location: coordinates,
-    image: req.file.path,
+    // image: req.file.path,
+    image: { url: req.file.path, filename: req.file.filename },
     admins: [req.userData.userId],
     creator: req.userData.userId,
   });
@@ -171,7 +175,7 @@ const deleteStorage = async (req, res, next) => {
 
   let storage;
   try {
-    storage = await Storage.findById(storageId);
+    storage = await Storage.findById(storageId).populate('storageItems');
   } catch (err) {
     return next(
       new HttpError(
@@ -193,20 +197,35 @@ const deleteStorage = async (req, res, next) => {
     return next(error);
   }
 
-  const imagePath = storage.image;
+  // const imagePath = storage.image;
+  if (storage.storageItems && storage.storageItems.length > 0) {
+    try {
+      storage.storageItems.forEach(async (item) => {
+        await cloudinary.uploader.destroy(item.image.filename);
+      });
+    } catch (err) {
+      return next(
+        new HttpError(
+          'Somthing went wrong, could not delete items images on cloud',
+          500
+        )
+      );
+    }
+  }
 
   try {
+    await cloudinary.uploader.destroy(storage.image.filename);
     await storage.deleteOne();
     await Item.deleteMany({ _id: { $in: storage.storageItems } });
   } catch (err) {
     return next(
-      new HttpError('Somthing went wrong, could not update storage', 500)
+      new HttpError('Somthing went wrong, could not delete storage', 500)
     );
   }
 
-  fs.unlink(imagePath, (err) => {
-    console.log(err);
-  });
+  // fs.unlink(imagePath, (err) => {
+  //   console.log(err);
+  // });
 
   res.status(200).json({ message: 'Deleted storage' });
 };
@@ -225,8 +244,6 @@ const createStorageItem = async (req, res, next) => {
     );
   }
 
-  // console.log(req.body);
-
   let user;
 
   try {
@@ -242,13 +259,10 @@ const createStorageItem = async (req, res, next) => {
   }
 
   const storageId = req.params.sid;
-  // console.log(storageId);
-  // console.log(req.params);
   let storage;
 
   try {
     storage = await Storage.findById(storageId);
-    // console.log('storage fetched');
   } catch (err) {
     return next(
       new HttpError('Somthing went wrong, could not fetch storage', 500)
@@ -276,10 +290,9 @@ const createStorageItem = async (req, res, next) => {
     date: Date.now(),
     amount: storage.storageItems.length + 1,
   };
-  // console.log(newItemsInStockLOg);
 
-  // console.log(req.body.title);
   const { name, description, innerNum, rentCost, depositAmount } = req.body;
+  // console.log(req.file);
 
   const createdItem = new Item({
     name,
@@ -288,11 +301,10 @@ const createStorageItem = async (req, res, next) => {
     rentCost,
     // inStock,
     depositAmount,
-    image: req.file.path,
+    image: { url: req.file.path, filename: req.file.filename },
     storage: storage,
     creator: req.userData.userId,
   });
-  // console.log(createdItem);
 
   try {
     const sess = await mongoose.startSession();
@@ -318,67 +330,6 @@ const createStorageItem = async (req, res, next) => {
     .json({ storage: storage.toObject({ getters: true }), item: createdItem });
 };
 
-// const createStorageItem = async (req, res, next) => {
-//   const errors = validationResult(req);
-//   // console.log(errors);
-//   if (!errors.isEmpty()) {
-//     return next(
-//       new HttpError('Ivalid inputs passed, please check your data', 422)
-//     );
-//   }
-//   const { name, description, rentCost, qntInStock } = req.body;
-//   const storageId = req.params.sid;
-
-//   let storage;
-
-//   try {
-//     storage = await Storage.findById(storageId);
-//     // console.log('storage fetched');
-//   } catch (err) {
-//     return next(
-//       new HttpError('Somthing went wrong, could not fetch storage', 500)
-//     );
-//   }
-
-//   if (storage.creator.toString() !== req.userData.userId) {
-//     return next(new HttpError('You are not allowed to add an item', 401));
-//   }
-
-// const createdStorageItem = {
-//   name,
-//   description,
-//   rentCost: Number(rentCost),
-//   qntInStock: Number(qntInStock),
-//   reservedStack: 0,
-//   creator: req.userData.userId,
-// };
-// // console.log(createdStorageItem);
-
-// storage.storageItems.push(createdStorageItem);
-
-//   let user;
-//   try {
-//     user = await User.findById(req.userData.userId);
-//   } catch (err) {
-//     return next(new HttpError('... failed, please try again', 422));
-//   }
-
-//   if (!user) {
-//     return next(new HttpError('Could not find user for provided id', 404));
-//   }
-
-//   try {
-//     await storage.save();
-//   } catch (err) {
-//     console.log(err);
-//     return next(
-//       new HttpError('Somthing went wrong, could not create storage item', 500)
-//     );
-//   }
-
-//   res.status(200).json({ storage: storage.toObject({ getters: true }) });
-// };
-
 // TODO ---- MOVE TO ITEMS ------------------
 // @desc    Update storage item
 // @route   PATCH api/storages/:sid/items/:itemid
@@ -393,7 +344,6 @@ const updateStorageItem = async (req, res, next) => {
   }
 
   const { name, description, rentCost } = req.body;
-  // const storageId = req.params.sid;
   const itemId = req.params.itemid;
 
   let item;
@@ -435,7 +385,7 @@ const updateStorageItem = async (req, res, next) => {
 const deleteStorageItem = async (req, res, next) => {
   // const storageId = req.params.sid;
   const itemId = req.params.itemid;
-  // console.log(itemId);
+
   let item;
   try {
     item = await Item.findById(itemId).populate('storage');
@@ -447,7 +397,7 @@ const deleteStorageItem = async (req, res, next) => {
       )
     );
   }
-  // console.log(item);
+
   if (!item) {
     return next(new HttpError('Could not find item for this id', 404));
   }
@@ -460,7 +410,14 @@ const deleteStorageItem = async (req, res, next) => {
     return next(error);
   }
 
-  const imagePath = item.image;
+  try {
+    await cloudinary.uploader.destroy(item.image.filename);
+  } catch (err) {
+    return next(
+      new HttpError('Somthing went wrong, could not delete image', 500)
+    );
+  }
+  // const imagePath = item.image;
 
   try {
     const sess = await mongoose.startSession();
@@ -472,7 +429,7 @@ const deleteStorageItem = async (req, res, next) => {
       amount: item.storage.storageItems.length,
     });
     await item.storage.save({ session: sess });
-    console.log(item);
+    // console.log(item);
     await sess.commitTransaction();
   } catch (err) {
     const error = new HttpError(
@@ -482,9 +439,9 @@ const deleteStorageItem = async (req, res, next) => {
     return next(error);
   }
 
-  fs.unlink(imagePath, (err) => {
-    console.log(err);
-  });
+  // fs.unlink(imagePath, (err) => {
+  //   console.log(err);
+  // });
 
   res.status(200).json({
     message: `Deleted item ${itemId}.`,
@@ -512,7 +469,9 @@ const reserveStorageItem = async (req, res, next) => {
   let item;
 
   try {
-    item = await Item.findById(itemId).populate('storage');
+    item = await Item.findById(itemId)
+      .populate('storage')
+      .populate('reservedBy');
   } catch (err) {
     return next(
       new HttpError('Somthing went wrong, could not fetch item', 500)
@@ -542,9 +501,16 @@ const reserveStorageItem = async (req, res, next) => {
     const error = new HttpError('Could not find user for provided id.', 404);
     return next(error);
   }
-
+  console.log(user);
   if (item && user && reserve && item.inStock) {
     item.reservedBy = req.userData.userId;
+    item.reservedByDetails = {
+      // _id: req.userData.userId,
+      name: user.name,
+      email: user.email,
+      phoneNum: user.phoneNum,
+    };
+
     item.inStock = false;
     user.reservedItems.push(item);
   } else if (item && user && !reserve && !item.inStock) {
@@ -553,20 +519,9 @@ const reserveStorageItem = async (req, res, next) => {
     //   return next(error);
     // }
     item.reservedBy = null;
+    item.reservedByDetails = null;
     item.inStock = true;
-    // console.log(item);
     user.reservedItems.pull(item);
-    // console.log(user);
-    // const userIndex = item.reservedBy.findIndex(
-    //   (item) => item.toString() === req.userData.userId.toString()
-    // );
-    // reservedItem.reservedBy.splice(userIndex, 1);
-    // reservedItem.reservedStack -= 1;
-
-    // const itemIndex = user.reservedItems.findIndex(
-    //   (item) => item.toString() === itemId.toString()
-    // );
-    // user.reservedItems.splice(itemIndex, 1);
   }
 
   try {
@@ -576,7 +531,7 @@ const reserveStorageItem = async (req, res, next) => {
     await item.save({ session: sess });
     await user.save({ session: sess });
     await sess.commitTransaction();
-    console.log(item.storage);
+    // console.log(item.storage);
     res.status(200).json({
       item: item.toObject({ getters: true }),
       storage: item.storage.toObject({ getters: true }),
@@ -648,13 +603,9 @@ const itemOut = async (req, res, next) => {
   if (item.inStock === true || !item.reservedBy) {
     return next(new HttpError('Please reserve item first', 403));
   }
-  // if (!item.reservedBy) {
-  //   const error = new HttpError('Please reserve first.', 401);
-  //   return next(error);
-  // }
 
   // update logs
-  storage.incomeLog.push({ date: '2020-011-29', amount: income });
+  storage.incomeLog.push({ date: Date.now(), amount: income });
   storage.activeCommunityUsers.push(item.reservedBy);
   item.out = true;
   // item.inStock = false;
@@ -763,6 +714,30 @@ const getUserItems = async (req, res, next) => {
   });
 };
 
+// get storage users who reseved items
+const getStorageUsers = async (req, res, next) => {
+  const storageId = req.params.sid;
+
+  let storage;
+  try {
+    storage = await Storage.findById(storageId).populate('storageItems');
+    // .populate('reservedBy', '-password');
+  } catch (err) {
+    const error = new HttpError(
+      'Somthing went wrong, could not find a storage',
+      500
+    );
+    return next(error);
+  }
+
+  if (!storage) {
+    return next(new HttpError('could not find this storage id', 404));
+  }
+  // console.log(storage);
+  res.json({ storage: storage.toObject({ getters: true }) });
+  // res.send('Storages route'));
+};
+
 // module.exports = getStorageById;
 exports.getStorageById = getStorageById;
 exports.getAllStorages = getAllStorages;
@@ -776,5 +751,7 @@ exports.deleteStorageItem = deleteStorageItem;
 exports.reserveStorageItem = reserveStorageItem;
 exports.itemOut = itemOut;
 exports.addItemsNode = addItemsNode;
+
+exports.getStorageUsers = getStorageUsers;
 
 // exports.getUserItems = getUserItems;

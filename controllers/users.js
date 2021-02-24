@@ -39,7 +39,7 @@ const signup = async (req, res, next) => {
     );
   }
 
-  const { name, IDnum, phoneNum, email, password } = req.body;
+  const { name, phoneNum, email, password } = req.body;
 
   let existingUser;
   try {
@@ -69,7 +69,7 @@ const signup = async (req, res, next) => {
 
   const createdUser = new User({
     name,
-    IDnum,
+    // IDnum,
     phoneNum,
     email,
     password: hashedPassword,

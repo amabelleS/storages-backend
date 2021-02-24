@@ -1,5 +1,9 @@
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
+
 const express = require('express');
-const dotenv = require('dotenv');
+// const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
 const bodyParser = require('body-parser');
@@ -12,7 +16,7 @@ const itemsRoutes = require('./routes/api/items');
 
 const httpError = require('./models/http-error');
 
-dotenv.config();
+// dotenv.config();
 
 const app = express();
 

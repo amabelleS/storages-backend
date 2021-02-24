@@ -1,4 +1,5 @@
 const multer = require('multer');
+// const {storage} = require('../cloudinary')
 const { v1: uuidv1 } = require('uuid');
 
 const MIME_TYPE_MAP = {
