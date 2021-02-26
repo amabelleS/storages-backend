@@ -287,7 +287,7 @@ const createStorageItem = async (req, res, next) => {
   // }
 
   const newItemsInStockLog = {
-    date: Date.now(),
+    date: new Date(),
     amount: storage.storageItems.length + 1,
   };
 
@@ -312,7 +312,7 @@ const createStorageItem = async (req, res, next) => {
     await createdItem.save({ session: sess });
     storage.storageItems.push(createdItem);
     storage.totalItemsInStockCountLog.push({
-      date: Date.now(),
+      date: new Date(),
       amount: storage.storageItems.length,
     });
     await storage.save({ session: sess });
@@ -425,7 +425,7 @@ const deleteStorageItem = async (req, res, next) => {
     await item.remove({ session: sess });
     item.storage.storageItems.pull(item);
     item.storage.totalItemsInStockCountLog.push({
-      date: Date.now(),
+      date: new Date(),
       amount: item.storage.storageItems.length,
     });
     await item.storage.save({ session: sess });
@@ -605,13 +605,13 @@ const itemOut = async (req, res, next) => {
   }
 
   // update logs
-  storage.incomeLog.push({ date: Date.now(), amount: income });
+  storage.incomeLog.push({ date: new Date(), amount: income });
   storage.activeCommunityUsers.push(item.reservedBy);
   item.out = true;
   // item.inStock = false;
   // const totalItemOutNow =
   //   storage.storageItems.filter((item) => item.out).length + 1;
-  // console.log(storage.storageItems);
+  console.log(storage.incomeLog);
   // storage.totalItemsCurrentlyInUseLog.push({
   //   date: Date.now(),
   //   amount: totalItemOutNow,
