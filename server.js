@@ -5,7 +5,7 @@ if (process.env.NODE_ENV !== 'production') {
 const express = require('express');
 // const dotenv = require('dotenv');
 // const fs = require('fs');
-const path = require('path');
+// const path = require('path');
 const bodyParser = require('body-parser');
 
 const connectDB = require('./config/db');
@@ -28,7 +28,7 @@ app.use(express.json({ extended: false }));
 
 app.use(bodyParser.json());
 
-app.use('/uploads/images', express.static(path.join('uploads', 'images')));
+// app.use('/uploads/images', express.static(path.join('uploads', 'images')));
 
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
