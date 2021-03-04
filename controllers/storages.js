@@ -1,6 +1,6 @@
-const fs = require('fs');
+// const fs = require('fs');
 const HttpError = require('../models/http-error');
-const uuid = require('uuid');
+// const uuid = require('uuid');
 const getCoordsForAddress = require('../utils/locations');
 
 const Storage = require('../models/storageModal');
@@ -43,9 +43,8 @@ const getStorageById = async (req, res, next) => {
   if (!storage) {
     return next(new HttpError('could not find this storage id', 404));
   }
-  // console.log(storage);
+
   res.json({ storage: storage.toObject({ getters: true }) });
-  // res.send('Storages route'));
 };
 
 const getAllStorages = async (req, res, next) => {
@@ -59,9 +58,7 @@ const getAllStorages = async (req, res, next) => {
   }
 
   if (!storages || storages.length === 0) {
-    // throw error;
     return next(new HttpError('could not find storages', 404));
-    // return res.status(404).json({ massege: 'could not find this storage id' });
   }
   res.json({
     storages: storages.map((storage) => storage.toObject({ getters: true })),
@@ -76,7 +73,6 @@ const createStorage = async (req, res, next) => {
     );
   }
 
-  // console.log(req.body.title);
   const { title, description, address } = req.body;
 
   let coordinates;
@@ -86,7 +82,6 @@ const createStorage = async (req, res, next) => {
     return next(error);
   }
 
-  console.log(req.file);
   const createdStorage = new Storage({
     title,
     description,
@@ -107,7 +102,7 @@ const createStorage = async (req, res, next) => {
       new HttpError('Creating storage failed, please try again', 422)
     );
   }
-  // console.log(user);!!!
+
   if (!user) {
     return next(new HttpError('Could not find user for provided id', 404));
   }
@@ -253,7 +248,6 @@ const createStorageItem = async (req, res, next) => {
       new HttpError('Creating storage item failed, please try again', 422)
     );
   }
-  // console.log(user);!!!
   if (!user) {
     return next(new HttpError('Could not find user for provided id', 404));
   }
@@ -276,20 +270,6 @@ const createStorageItem = async (req, res, next) => {
   if (storage.creator.toString() !== req.userData.userId) {
     return next(new HttpError('You are not allowed to add an item', 401));
   }
-  // update items/stock count:
-  // try {
-  //   storage.TotalItemsInStockCount.push({
-  //     date: Date.now,
-  //     amount: storage.storageItems.length + 1,
-  //   });
-  // } catch (err) {
-  //   console.log(err);
-  // }
-
-  const newItemsInStockLog = {
-    date: new Date(),
-    amount: storage.storageItems.length + 1,
-  };
 
   const { name, description, innerNum, rentCost, depositAmount } = req.body;
   // console.log(req.file);
@@ -299,7 +279,6 @@ const createStorageItem = async (req, res, next) => {
     description,
     innerNum,
     rentCost,
-    // inStock,
     depositAmount,
     image: { url: req.file.path, filename: req.file.filename },
     storage: storage,
@@ -311,10 +290,6 @@ const createStorageItem = async (req, res, next) => {
     sess.startTransaction();
     await createdItem.save({ session: sess });
     storage.storageItems.push(createdItem);
-    storage.totalItemsInStockCountLog.push({
-      date: new Date(),
-      amount: storage.storageItems.length,
-    });
     await storage.save({ session: sess });
     await sess.commitTransaction();
   } catch (err) {
@@ -383,10 +358,10 @@ const updateStorageItem = async (req, res, next) => {
 // @route   DELETE api/storages/:sid/items/:itemid
 // @access  Private+Admin
 const deleteStorageItem = async (req, res, next) => {
-  // const storageId = req.params.sid;
   const itemId = req.params.itemid;
 
   let item;
+
   try {
     item = await Item.findById(itemId).populate('storage');
   } catch (err) {
@@ -424,12 +399,8 @@ const deleteStorageItem = async (req, res, next) => {
     sess.startTransaction();
     await item.remove({ session: sess });
     item.storage.storageItems.pull(item);
-    item.storage.totalItemsInStockCountLog.push({
-      date: new Date(),
-      amount: item.storage.storageItems.length,
-    });
+
     await item.storage.save({ session: sess });
-    // console.log(item);
     await sess.commitTransaction();
   } catch (err) {
     const error = new HttpError(
@@ -462,8 +433,6 @@ const reserveStorageItem = async (req, res, next) => {
   }
 
   const { reserve } = req.body;
-
-  // const storageId = req.params.sid;
   const itemId = req.params.itemid;
 
   let item;
@@ -501,7 +470,7 @@ const reserveStorageItem = async (req, res, next) => {
     const error = new HttpError('Could not find user for provided id.', 404);
     return next(error);
   }
-  console.log(user);
+
   if (item && user && reserve && item.inStock) {
     item.reservedBy = req.userData.userId;
     item.reservedByDetails = {
@@ -514,8 +483,11 @@ const reserveStorageItem = async (req, res, next) => {
     item.inStock = false;
     user.reservedItems.push(item);
   } else if (item && user && !reserve && !item.inStock) {
-    // if (item.reservedBy !== req.userData.userId) {
-    //   const error = new HttpError('You have not reserved this item yet.', 404);
+    // if (
+    //   item.creator.toString() !== req.userData.userId ||
+    //   item.reservedBy.toString() !== req.userData.userId
+    // ) {
+    //   const error = new HttpError('Could not blaaa user for provided id.', 401);
     //   return next(error);
     // }
     item.reservedBy = null;
@@ -527,11 +499,9 @@ const reserveStorageItem = async (req, res, next) => {
   try {
     const sess = await mongoose.startSession();
     sess.startTransaction();
-
     await item.save({ session: sess });
     await user.save({ session: sess });
     await sess.commitTransaction();
-    // console.log(item.storage);
     res.status(200).json({
       item: item.toObject({ getters: true }),
       storage: item.storage.toObject({ getters: true }),
@@ -545,7 +515,7 @@ const reserveStorageItem = async (req, res, next) => {
   }
 };
 
-// @desc    PATCH update storage logs
+// @desc    PATCH update storage logs - for the charts
 // @route   PATCH api/storages/:storageId/items/:itemId/out
 // @access  Private+admin
 const itemOut = async (req, res, next) => {
@@ -566,7 +536,6 @@ const itemOut = async (req, res, next) => {
 
   try {
     storage = await Storage.findById(storageId);
-    // console.log('storage fetched');
   } catch (err) {
     return next(
       new HttpError('Somthing went wrong, could not fetch storage', 500)
@@ -578,7 +547,7 @@ const itemOut = async (req, res, next) => {
   }
 
   if (storage.creator.toString() !== req.userData.userId) {
-    return next(new HttpError('You are not allowed to add an item', 401));
+    return next(new HttpError('You are not allowed to check an item out', 401));
   }
 
   let item;
@@ -595,11 +564,6 @@ const itemOut = async (req, res, next) => {
     return next(new HttpError('Could not find item for this id', 404));
   }
 
-  if (item.creator.toString() !== req.userData.userId) {
-    const error = new HttpError('You are not allowed to out this item.', 401);
-    return next(error);
-  }
-
   if (item.inStock === true || !item.reservedBy) {
     return next(new HttpError('Please reserve item first', 403));
   }
@@ -608,19 +572,10 @@ const itemOut = async (req, res, next) => {
   storage.incomeLog.push({ date: new Date(), amount: income });
   storage.activeCommunityUsers.push(item.reservedBy);
   item.out = true;
-  // item.inStock = false;
-  // const totalItemOutNow =
-  //   storage.storageItems.filter((item) => item.out).length + 1;
-  console.log(storage.incomeLog);
-  // storage.totalItemsCurrentlyInUseLog.push({
-  //   date: Date.now(),
-  //   amount: totalItemOutNow,
-  // });
 
   try {
     const sess = await mongoose.startSession();
     sess.startTransaction();
-    // console.log(item);
     await item.save({ session: sess });
     await storage.save({ session: sess });
     await sess.commitTransaction();
@@ -631,7 +586,7 @@ const itemOut = async (req, res, next) => {
     });
   } catch (err) {
     const error = new HttpError(
-      'Reserving item failed, please try again.',
+      'Reserving item failed, please try again later.',
       500
     );
     return next(error);
@@ -639,7 +594,6 @@ const itemOut = async (req, res, next) => {
 };
 
 // add charts nodes:
-
 const addItemsNode = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -683,62 +637,6 @@ const addItemsNode = async (req, res, next) => {
   res.status(200).json({ storage: storage.toObject({ getters: true }) });
 };
 
-// user's items:
-
-const getUserItems = async (req, res, next) => {
-  const userId = req.params.uid;
-
-  // let items;
-  let userWithItems;
-  try {
-    userWithItems = await User.findById(userId).populate('reservedItems');
-  } catch (err) {
-    const error = new HttpError(
-      'Fetching items failed, please try again later.',
-      500
-    );
-    return next(error);
-  }
-
-  // if (!item || items.length === 0) {
-  if (!userWithItems || userWithItems.reservedItems.length === 0) {
-    return next(
-      new HttpError('Could not find items for the provided user id.', 404)
-    );
-  }
-
-  res.json({
-    items: userWithItems.reservedItems.map((item) =>
-      item.toObject({ getters: true })
-    ),
-  });
-};
-
-// get storage users who reseved items
-const getStorageUsers = async (req, res, next) => {
-  const storageId = req.params.sid;
-
-  let storage;
-  try {
-    storage = await Storage.findById(storageId).populate('storageItems');
-    // .populate('reservedBy', '-password');
-  } catch (err) {
-    const error = new HttpError(
-      'Somthing went wrong, could not find a storage',
-      500
-    );
-    return next(error);
-  }
-
-  if (!storage) {
-    return next(new HttpError('could not find this storage id', 404));
-  }
-  // console.log(storage);
-  res.json({ storage: storage.toObject({ getters: true }) });
-  // res.send('Storages route'));
-};
-
-// module.exports = getStorageById;
 exports.getStorageById = getStorageById;
 exports.getAllStorages = getAllStorages;
 exports.createStorage = createStorage;
@@ -751,7 +649,3 @@ exports.deleteStorageItem = deleteStorageItem;
 exports.reserveStorageItem = reserveStorageItem;
 exports.itemOut = itemOut;
 exports.addItemsNode = addItemsNode;
-
-exports.getStorageUsers = getStorageUsers;
-
-// exports.getUserItems = getUserItems;

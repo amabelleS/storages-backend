@@ -7,11 +7,9 @@ const storagesControllers = require('../../controllers/storages');
 // const fileUpload = require('../../middlware/file-upload');
 // const fileUpload = require('../../middlware/file-cloudinary');
 const checkAuth = require('../../middlware/check-auth');
-// const getStorageById = require('../../controllers/storages');
 
 const multer = require('multer');
 const { storage } = require('../../cloudinary');
-
 const fileUpload = multer({ storage });
 
 // @route    GET api/storages
@@ -61,12 +59,6 @@ router.patch(
 router.delete('/:sid', storagesControllers.deleteStorage);
 
 // ITEMS ----------------------------------------------------
-
-// @route    GET api/storages/:sid/items
-// @desc     get storage
-// @access   Public
-// router.get('/:sid/items', storagesControllers.getStorageItems);
-
 // @desc    Create new storage item
 // @route   POST api/storages/:sid/items
 // @access  Private+/admin
@@ -76,10 +68,8 @@ router.post(
   [
     check('name').not().isEmpty(),
     check('description').isLength({ min: 5 }),
-    // check('innerNum').not().isEmpty(),
     check('rentCost').not().isEmpty(),
     check('depositAmount').not().isEmpty(),
-    // check('qntInStock').not().isEmpty(),
   ],
   storagesControllers.createStorageItem
 );
@@ -130,6 +120,6 @@ router.patch(
 // @route    GET api/storages/:sid/users
 // @desc     get storage users reseved items
 // @access   Private + admin
-router.get('/:sid/users', storagesControllers.getStorageUsers);
+// router.get('/:sid/users', storagesControllers.getStorageUsers);
 
 module.exports = router;

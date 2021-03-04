@@ -8,7 +8,7 @@ const router = express.Router();
 // @route    GET api/users
 // @desc     Get users
 // @access   Public
-router.get('/', usersControllers.getUsers);
+// router.get('/', usersControllers.getUsers);
 
 // @route    POST api/users
 // @desc     signup

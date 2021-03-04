@@ -28,11 +28,6 @@ const userSchema = new Schema(
       required: true,
       minlength: 6,
     },
-    // isAdmin: {
-    //   type: Boolean,
-    //   required: true,
-    //   default: false,
-    // },
     date: {
       type: Date,
       default: Date.now,
