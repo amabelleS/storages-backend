@@ -5,6 +5,7 @@ const Schema = mongoose.Schema;
 const storageSchema = new Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
+  link: { type: String },
   address: { type: String, required: true },
   location: {
     lat: { type: Number, required: true },

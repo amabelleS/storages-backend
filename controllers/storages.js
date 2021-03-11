@@ -73,7 +73,7 @@ const createStorage = async (req, res, next) => {
     );
   }
 
-  const { title, description, address } = req.body;
+  const { title, description, link, address } = req.body;
 
   let coordinates;
   try {
@@ -85,6 +85,7 @@ const createStorage = async (req, res, next) => {
   const createdStorage = new Storage({
     title,
     description,
+    link,
     address,
     location: coordinates,
     // image: req.file.path,
@@ -132,7 +133,7 @@ const updateStorage = async (req, res, next) => {
     );
   }
 
-  const { title, description } = req.body;
+  const { title, description, link } = req.body;
   const storageId = req.params.sid;
 
   let storage;
@@ -151,6 +152,7 @@ const updateStorage = async (req, res, next) => {
 
   storage.title = title;
   storage.description = description;
+  storage.link = link;
 
   try {
     await storage.save();
@@ -478,6 +480,7 @@ const reserveStorageItem = async (req, res, next) => {
       name: user.name,
       email: user.email,
       phoneNum: user.phoneNum,
+      facebookName: user.facebookName,
     };
 
     item.inStock = false;

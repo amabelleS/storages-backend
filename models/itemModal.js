@@ -24,6 +24,7 @@ const itemSchema = new Schema({
     name: { type: String },
     email: { type: String },
     phoneNum: { type: Number },
+    facebookName: { type: String },
   },
   // image: { type: String },
   image: { url: String, filename: String },

@@ -25,7 +25,7 @@ const signup = async (req, res, next) => {
     );
   }
 
-  const { name, phoneNum, email, password } = req.body;
+  const { name, phoneNum, facebookName, email, password } = req.body;
 
   let existingUser;
   try {
@@ -55,7 +55,7 @@ const signup = async (req, res, next) => {
 
   const createdUser = new User({
     name,
-    // IDnum,
+    facebookName,
     phoneNum,
     email,
     password: hashedPassword,
@@ -86,6 +86,7 @@ const signup = async (req, res, next) => {
     userId: createdUser.id,
     email: createdUser.email,
     name: createdUser.name,
+    facebookName: createdUser.facebookName,
     token: token,
   });
 };
@@ -138,6 +139,7 @@ const login = async (req, res, next) => {
     userId: existingUser.id,
     email: existingUser.email,
     name: existingUser.name,
+    facebookName: existingUser.facebookName,
     token: token,
   });
 };

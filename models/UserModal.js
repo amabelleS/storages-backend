@@ -10,6 +10,10 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
+    facebookName: {
+      type: String,
+      // required: true,
+    },
     // IDnum: {
     //   type: Number,
     //   required: true,
