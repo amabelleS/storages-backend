@@ -6,7 +6,7 @@ const express = require('express');
 // const dotenv = require('dotenv');
 // const fs = require('fs');
 // const path = require('path');
-const bodyParser = require('body-parser');
+// const bodyParser = require('body-parser');
 
 const connectDB = require('./config/db');
 
@@ -26,7 +26,7 @@ connectDB();
 // Init Middleware
 app.use(express.json({ extended: false }));
 
-app.use(bodyParser.json());
+// app.use(bodyParser.json());  // deprecated
 
 // app.use('/uploads/images', express.static(path.join('uploads', 'images')));
 
@@ -36,7 +36,14 @@ app.use((req, res, next) => {
     'Access-Control-Allow-Headers',
     'Origin, X-Requested-With, Content-Type, Accept, Authorization'
   );
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE');
+  res.setHeader(
+    'Access-Control-Allow-Methods',
+    'GET, POST, PATCH, DELETE, OPTIONS'
+  );
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
   next();
 });
 

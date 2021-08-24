@@ -15,10 +15,6 @@ const itemSchema = new Schema({
   reservedBy: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    // name: { type: String },
-    // email: { type: String },
-    // phoneNum: { type: Number },
-    // pickUpTime: Date,
   },
   reservedByDetails: {
     name: { type: String },

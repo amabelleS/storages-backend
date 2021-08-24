@@ -42,7 +42,7 @@ const getUserItems = async (req, res, next) => {
 //
 const itemIn = async (req, res, next) => {
   const errors = validationResult(req);
-  if (!errors.isEmpty()) {
+   if (!errors.isEmpty()) {
     console.log(errors);
     return next(
       new HttpError('Ivalid inputs passed, please check your data', 422)
