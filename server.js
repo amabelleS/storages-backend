@@ -40,6 +40,7 @@ app.use((req, res, next) => {
     'Access-Control-Allow-Methods',
     'GET, POST, PATCH, DELETE, OPTIONS'
   );
+  res.setHeader('Cache-Control', 's-max-age=1, stale-while-revalidate');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -75,3 +76,6 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
   console.log(`Server runninig in ${process.env.NODE_ENV} mode on port ${PORT}`)
 );
+
+// Export the Express API in order for Vercel to turn Express into a serverless function
+module.exports = app;
