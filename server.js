@@ -8,13 +8,13 @@ const express = require('express');
 // const path = require('path');
 // const bodyParser = require('body-parser');
 
-const connectDB = require('../config/db');
+const connectDB = require('./config/db');
 
-const usersRoutes = require('../routes/api/users');
-const storagesRoutes = require('../routes/api/storages');
-const itemsRoutes = require('../routes/api/items');
+const usersRoutes = require('./routes/api/users');
+const storagesRoutes = require('./routes/api/storages');
+const itemsRoutes = require('./routes/api/items');
 
-const httpError = require('../models/http-error');
+const httpError = require('./models/http-error');
 
 // dotenv.config();
 
